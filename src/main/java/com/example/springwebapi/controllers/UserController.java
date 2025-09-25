@@ -3,6 +3,7 @@ package com.example.springwebapi.controllers;
 import com.example.springwebapi.dtos.UserDTO;
 import com.example.springwebapi.exceptions.UserDataInvalid;
 import com.example.springwebapi.exceptions.UsernameConflictException;
+import com.example.springwebapi.repositories.UserRepository;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -10,13 +11,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @RestController
 public class UserController {
     private final UserDetailsManager userDetailsManager;
     private final PasswordEncoder passwordEncoder;
+    private final UserRepository userRepository;
 
-    public UserController(UserDetailsManager userDetailsManager, PasswordEncoder passwordEncoder) {
+    public UserController(UserDetailsManager userDetailsManager, PasswordEncoder passwordEncoder, UserRepository userRepository) {
         this.userDetailsManager = userDetailsManager;
+        this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -26,19 +32,27 @@ public class UserController {
         if (userDetailsManager.userExists(userDTO.username)) {
             throw new UsernameConflictException("Username " + userDTO.username + " already exists");
         }
-        UserDetails userDetails = User.builder().disabled(!userDTO.enabled).username(userDTO.username)
-                .password(passwordEncoder.encode(userDTO.password)).roles(userDTO.authorities).build();
+        UserDetails userDetails = User.builder().disabled(!userDTO.enabled).username(userDTO.username).password(passwordEncoder.encode(userDTO.password)).roles(userDTO.authorities).build();
         userDetailsManager.createUser(userDetails);
         userDetails = userDetailsManager.loadUserByUsername(userDTO.username);
-        return new UserDTO(userDetails.getUsername(), userDetails.getPassword(), userDetails.isEnabled(), userDetails
-                .getAuthorities().stream().map(authority -> authority.toString().substring(5)).toArray(String[]::new));
+        return new UserDTO(userDetails.getUsername(), userDetails.getPassword(), userDetails.isEnabled(), userDetails.getAuthorities().stream().map(authority -> authority.toString().substring(5)).toArray(String[]::new));
+    }
+
+    @GetMapping("/users")
+    List<UserDTO> getUsers() {
+        List<UserDTO> userDTOS = new ArrayList<>();
+        userRepository.findAll().forEach(user -> {
+            String[] strings = user.getAuthorities().stream().map(authority -> authority.getAuthority().substring(5)).toArray(String[]::new);
+            UserDTO userDTO = new UserDTO(user.getUsername(), user.getPassword(), user.isEnabled(), strings);
+            userDTOS.add(userDTO);
+        });
+        return userDTOS;
     }
 
     @GetMapping("/user/{username}")
     UserDTO getUser(@PathVariable String username) {
         UserDetails userDetails = userDetailsManager.loadUserByUsername(username);
-        return new UserDTO(userDetails.getUsername(), userDetails.getPassword(), userDetails.isEnabled(), userDetails
-                .getAuthorities().stream().map(authority -> authority.toString().substring(5)).toArray(String[]::new));
+        return new UserDTO(userDetails.getUsername(), userDetails.getPassword(), userDetails.isEnabled(), userDetails.getAuthorities().stream().map(authority -> authority.toString().substring(5)).toArray(String[]::new));
     }
 
     @PutMapping("/user/{username}")
@@ -48,12 +62,10 @@ public class UserController {
             throw new UserDataInvalid("Username " + username + " cannot be changed");
         }
         validateUserDTO(userDTO);
-        userDetails = User.builder().disabled(!userDTO.enabled).username(userDTO.username)
-                .password(passwordEncoder.encode(userDTO.password)).roles(userDTO.authorities).build();
+        userDetails = User.builder().disabled(!userDTO.enabled).username(userDTO.username).password(passwordEncoder.encode(userDTO.password)).roles(userDTO.authorities).build();
         userDetailsManager.updateUser(userDetails);
         userDetails = userDetailsManager.loadUserByUsername(userDTO.username);
-        return new UserDTO(userDetails.getUsername(), userDetails.getPassword(), userDetails.isEnabled(), userDetails
-                .getAuthorities().stream().map(authority -> authority.toString().substring(5)).toArray(String[]::new));
+        return new UserDTO(userDetails.getUsername(), userDetails.getPassword(), userDetails.isEnabled(), userDetails.getAuthorities().stream().map(authority -> authority.toString().substring(5)).toArray(String[]::new));
     }
 
     @DeleteMapping("/user/{username}")
