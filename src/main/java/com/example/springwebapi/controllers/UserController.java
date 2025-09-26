@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Controller for managing user-related operations.
+ */
 @RestController
 public class UserController {
     private final UserDetailsManager userDetailsManager;
@@ -26,6 +29,12 @@ public class UserController {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /**
+     * Create a new user with the provided UserDTO.
+     * Validates the UserDTO and checks for username conflicts.
+     * Encodes the password and creates a new UserDetails object.
+     * Saves the user details and returns the created UserDTO.
+     */
     @PostMapping("/user")
     UserDTO createUser(@RequestBody UserDTO userDTO) {
         validateUserDTO(userDTO);
@@ -38,6 +47,11 @@ public class UserController {
         return new UserDTO(userDetails.getUsername(), userDetails.getPassword(), userDetails.isEnabled(), userDetails.getAuthorities().stream().map(authority -> authority.toString().substring(5)).toArray(String[]::new));
     }
 
+    /**
+     * Get all users.
+     *
+     * @return
+     */
     @GetMapping("/users")
     List<UserDTO> getUsers() {
         List<UserDTO> userDTOS = new ArrayList<>();
@@ -49,12 +63,25 @@ public class UserController {
         return userDTOS;
     }
 
+    /**
+     * Get a single user by username.
+     *
+     * @param username
+     * @return
+     */
     @GetMapping("/user/{username}")
     UserDTO getUser(@PathVariable String username) {
         UserDetails userDetails = userDetailsManager.loadUserByUsername(username);
         return new UserDTO(userDetails.getUsername(), userDetails.getPassword(), userDetails.isEnabled(), userDetails.getAuthorities().stream().map(authority -> authority.toString().substring(5)).toArray(String[]::new));
     }
 
+    /**
+     * Update a user by username.
+     *
+     * @param username
+     * @param userDTO
+     * @return
+     */
     @PutMapping("/user/{username}")
     UserDTO updateUser(@PathVariable String username, @RequestBody UserDTO userDTO) {
         UserDetails userDetails = userDetailsManager.loadUserByUsername(username);
@@ -68,6 +95,11 @@ public class UserController {
         return new UserDTO(userDetails.getUsername(), userDetails.getPassword(), userDetails.isEnabled(), userDetails.getAuthorities().stream().map(authority -> authority.toString().substring(5)).toArray(String[]::new));
     }
 
+    /**
+     * Delete a user by username.
+     *
+     * @param username
+     */
     @DeleteMapping("/user/{username}")
     void deleteUser(@PathVariable String username) {
         if (!userDetailsManager.userExists(username)) {
