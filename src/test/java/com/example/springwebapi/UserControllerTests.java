@@ -52,7 +52,7 @@ class UserControllerTests {
     }
 
     @Test
-    void getUserByUsername() {
+    void getUser() {
         // Install test user
         UserDTO userDTO = new UserDTO(TEST_USERNAME, TEST_PASSWORD, true, USER_ROLES);
         restTemplate.withBasicAuth(ADMIN_USERNAME, ADMIN_PASSWORD).postForObject("http://localhost:{port}/user", userDTO, UserDTO.class, port);
@@ -71,7 +71,7 @@ class UserControllerTests {
     }
 
     @Test
-    void getUserByUsernameInvalid() {
+    void getUser_ExpectingStatusCode404() {
         // Get user by username
         ResponseEntity<String> dtoResponseEntity = restTemplate.withBasicAuth(ADMIN_USERNAME, ADMIN_PASSWORD).getForEntity("http://localhost:{port}/user/{username}", String.class, port, TEST_USERNAME + "_invalid");
         assertThat(dtoResponseEntity.getStatusCode().value()).isEqualTo(404);
@@ -226,7 +226,7 @@ class UserControllerTests {
     }
 
     @Test
-    public void deleteUserByUsername() {
+    public void deleteUser() {
         // Install test user
         UserDTO userDTO = new UserDTO(TEST_USERNAME, TEST_PASSWORD, true, USER_ROLES);
         restTemplate.withBasicAuth(ADMIN_USERNAME, ADMIN_PASSWORD).postForObject("http://localhost:{port}/user", userDTO, UserDTO.class, port);
